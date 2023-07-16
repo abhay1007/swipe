@@ -1,10 +1,8 @@
 package com.example.demoapp.addProduct
 
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import android.net.Uri
-import android.widget.Toast
-import androidx.lifecycle.viewModelScope
-import com.example.demoapp.listing.di.MyApp
 import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
@@ -14,12 +12,13 @@ import android.Manifest
 import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
-
+import android.net.Uri
+import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-
+import androidx.lifecycle.viewModelScope
 import com.example.demoapp.listing.ProductRepository
-
+import com.example.demoapp.listing.di.MyApp
 import okhttp3.RequestBody.Companion.toRequestBody
 
 class AddProductViewModel(private val productRepository: ProductRepository) : ViewModel() {
@@ -27,6 +26,9 @@ class AddProductViewModel(private val productRepository: ProductRepository) : Vi
     companion object {
         private const val REQUEST_IMAGE_PICKER = 100
     }
+
+    private val _imagePreviewUri = MutableLiveData<Uri?>()
+    val imagePreviewUri: LiveData<Uri?> get() = _imagePreviewUri
 
     var productName: String = ""
     var productType: String = ""
@@ -58,6 +60,7 @@ class AddProductViewModel(private val productRepository: ProductRepository) : Vi
         if (requestCode == REQUEST_IMAGE_PICKER && resultCode == Activity.RESULT_OK) {
             data?.data?.let {
                 imageUri = it
+                setImagePreview(it) // Set the selected image Uri for preview
             }
         }
     }
@@ -71,14 +74,6 @@ class AddProductViewModel(private val productRepository: ProductRepository) : Vi
             && grantResults[0] == PackageManager.PERMISSION_GRANTED
         ) {
             // Permission granted, open image picker
-            // You can call this method from the UI when the user clicks on the "Select Image" button
-            // You can also use the imageUri to display a preview of the selected image to the user
-            // in the UI.
-            // For example, you can use Glide or Picasso to load the image into an ImageView
-            // Here's an example using Glide:
-            // Glide.with(activity)
-            //     .load(imageUri)
-            //     .into(imageView)
         } else {
             // Permission denied
             showMessage("Permission denied. Cannot pick an image.")
@@ -120,11 +115,35 @@ class AddProductViewModel(private val productRepository: ProductRepository) : Vi
         }
     }
 
-    private fun isValidData(): Boolean {
-        // Add your validation logic here, such as checking if fields are not empty, etc.
-        return true
+    fun setImagePreview(uri: Uri?) {
+        _imagePreviewUri.value = uri
     }
 
+    private fun isValidData(): Boolean {
+        if (productName.isBlank()) {
+            showMessage("Product name cannot be empty.")
+            return false
+        }
+
+        if (productType.isBlank()) {
+            showMessage("Product type cannot be empty.")
+            return false
+        }
+
+        if (price.isBlank()) {
+            showMessage("Selling price cannot be empty.")
+            return false
+        }
+
+        if (tax.isBlank()) {
+            showMessage("Tax rate cannot be empty.")
+            return false
+        }
+
+        // Add more validation as needed
+
+        return true
+    }
     private fun showMessage(message: String) {
         // Show a beautiful toast message
         // You can use any custom toast library or create your own beautiful toast UI here
